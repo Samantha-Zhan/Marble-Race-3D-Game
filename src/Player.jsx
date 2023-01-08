@@ -16,7 +16,16 @@ export default function Player() {
   const end = useGame((state) => state.end);
   const blockCount = useGame((state) => state.blocksCount);
 
+  const [smoothedCameraPosition] = useState(
+    () => new THREE.Vector3(-10, -10, -10)
+  );
+  const [smoothedCameraTarget] = useState(() => new THREE.Vector3());
+
   const jump = () => {
+    const state = useGame.getState();
+    if (state.phase === "ended") {
+      return;
+    }
     // test collision, if distance too high, disable jump
     const origin = object.current.translation();
     origin.y -= 0.31;
@@ -28,84 +37,91 @@ export default function Player() {
     }
   };
 
-  const reset = () => {};
+  const reset = () => {
+    // put back at origin; remove translation force; remove angular force
+    object.current.setTranslation({ x: 0, y: 1, z: 0 });
+    object.current.setLinvel({ x: 0, y: 0, z: 0 });
+    object.current.setAngvel({ x: 0, y: 0, z: 0 });
+  };
 
   useEffect(() => {
-    const unsubscribeAny = subscribeKeys(
-      (state) => {
-        start();
-      },
-      () => {}
-    );
-    const unsubscribeJump = subscribeKeys(
-      (state) => {
-        // what we want to observe
-        return state.jump;
-      },
-      (value) => {
-        if (value) {
-          jump();
+    const unsubscribeReset = useGame.subscribe(
+      (state) => state.phase,
+      (phase) => {
+        if (phase === "ready") {
+          reset();
         }
+      }
+    );
+
+    const unsubscribeAny = subscribeKeys(() => {
+      start();
+    });
+
+    const unsubscribeJump = subscribeKeys(
+      (state) => state.jump,
+      (value) => {
+        if (value) jump();
       }
     );
     return () => {
       unsubscribeJump();
       unsubscribeAny();
+      unsubscribeReset();
     };
   }, []);
 
-  const [smoothedCameraPosition] = useState(
-    () => new THREE.Vector3(-10, -10, -10)
-  );
-  const [smoothedCameraTarget] = useState(() => new THREE.Vector3());
   useFrame((state, delta) => {
-    const { forward, backward, leftward, rightward } = getKeys();
-    const impulse = { x: 0, y: 0, z: 0 };
-    const torque = { x: 0, y: 0, z: 0 };
-    const impulseStrength = 0.5 * delta;
-    const torqueStrength = 0.5 * delta;
-    if (forward) {
-      impulse.z -= impulseStrength;
-      torque.x -= torqueStrength;
-    }
-    if (leftward) {
-      impulse.x -= impulseStrength;
-      torque.z += torqueStrength;
-    }
-    if (rightward) {
-      impulse.x += impulseStrength;
-      torque.z -= torqueStrength;
-    }
-    if (backward) {
-      impulse.z += impulseStrength;
-      torque.x += torqueStrength;
-    }
+    const gameState = useGame.getState();
+    if (gameState.phase != "ended") {
+      const { forward, backward, leftward, rightward } = getKeys();
+      const impulse = { x: 0, y: 0, z: 0 };
+      const torque = { x: 0, y: 0, z: 0 };
+      const impulseStrength = 0.5 * delta;
+      const torqueStrength = 0.5 * delta;
+      if (forward) {
+        impulse.z -= impulseStrength;
+        torque.x -= torqueStrength;
+      }
+      if (leftward) {
+        impulse.x -= impulseStrength;
+        torque.z += torqueStrength;
+      }
+      if (rightward) {
+        impulse.x += impulseStrength;
+        torque.z -= torqueStrength;
+      }
+      if (backward) {
+        impulse.z += impulseStrength;
+        torque.x += torqueStrength;
+      }
 
-    object.current.applyImpulse(impulse);
-    object.current.applyTorqueImpulse(torque);
+      object.current.applyImpulse(impulse);
+      object.current.applyTorqueImpulse(torque);
 
-    // camera
-    const objectPosition = object.current.translation();
-    const cameraPosition = new THREE.Vector3();
-    cameraPosition.copy(objectPosition);
-    cameraPosition.z += 2.25;
-    cameraPosition.y += 0.65;
-    const cameraTarget = new THREE.Vector3();
-    cameraTarget.copy(objectPosition);
-    cameraTarget.y += 0.25;
+      // camera
+      const objectPosition = object.current.translation();
+      const cameraPosition = new THREE.Vector3();
+      cameraPosition.copy(objectPosition);
+      cameraPosition.z += 2.25;
+      cameraPosition.y += 0.65;
+      const cameraTarget = new THREE.Vector3();
+      cameraTarget.copy(objectPosition);
+      cameraTarget.y += 0.25;
 
-    smoothedCameraPosition.lerp(cameraPosition, 5 * delta);
-    smoothedCameraTarget.lerp(cameraTarget, 5 * delta);
+      smoothedCameraPosition.lerp(cameraPosition, 5 * delta);
+      smoothedCameraTarget.lerp(cameraTarget, 5 * delta);
 
-    state.camera.position.copy(smoothedCameraPosition);
-    state.camera.lookAt(smoothedCameraTarget);
+      state.camera.position.copy(smoothedCameraPosition);
+      state.camera.lookAt(smoothedCameraTarget);
 
-    if (objectPosition.z < -(blockCount * 4 + 2)) {
-      end();
-    }
+      if (objectPosition.z < -(blockCount * 4 + 2)) {
+        end();
+      }
 
-    if (objectPosition.y < -4) {
-      restart();
+      if (objectPosition.y < -4) {
+        restart();
+      }
     }
   });
   return (

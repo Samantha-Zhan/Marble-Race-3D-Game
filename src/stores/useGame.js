@@ -4,23 +4,48 @@ import { subscribeWithSelector } from "zustand/middleware";
 export default create(
   subscribeWithSelector((set) => {
     return {
-      blocksCount: 3,
+      blocksCount: 10,
+      blocksSeed: 0,
+
+      /**
+       * Time
+       */
+      startTime: 0,
+      endTime: 0,
+
+      /**
+       * Phases
+       */
       phase: "ready",
+
       start: () => {
         set((state) => {
-          state.phase == "ready" ? {} : { phase: "playing" };
+          if (state.phase === "ready")
+            return { phase: "playing", startTime: Date.now() };
+
+          return {};
         });
       },
+
       restart: () => {
         set((state) => {
-          state.phase == "playing" || state.phase == "ended"
-            ? {}
-            : { phase: "ready" };
+          if (state.phase === "playing" || state.phase === "ended")
+            return {
+              phase: "ready",
+              blocksSeed: Math.random(),
+              blocksSeed: state.blocksSeed + 1,
+            };
+
+          return {};
         });
       },
+
       end: () => {
         set((state) => {
-          state.phase == "playing" ? {} : { phase: "ended" };
+          if (state.phase === "playing")
+            return { phase: "ended", endTime: Date.now() };
+
+          return {};
         });
       },
     };

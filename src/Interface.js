@@ -1,16 +1,51 @@
 import { useKeyboardControls } from "@react-three/drei";
+import { addEffect, useFrame } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
+import useGame from "./stores/useGame";
 
 export default function Interface() {
+  const restart = useGame((state) => state.restart);
+  const phase = useGame((state) => state.phase);
+
   const forward = useKeyboardControls((state) => state.forward);
   const leftward = useKeyboardControls((state) => state.leftward);
   const rightward = useKeyboardControls((state) => state.rightward);
   const backward = useKeyboardControls((state) => state.backward);
   const jump = useKeyboardControls((state) => state.jump);
 
+  const timeRef = useRef();
+  // called right after useFrame
+  useEffect(() => {
+    const unsubscribeEffect = addEffect(() => {
+      const state = useGame.getState();
+      let elapsedTime = 0;
+      if (state.phase === "playing") {
+        elapsedTime = Date.now() - state.startTime;
+      } else if (state.phase === "ended") {
+        elapsedTime = state.endTime - state.startTime;
+      }
+      elapsedTime /= 1000;
+      elapsedTime = elapsedTime.toFixed(2);
+      if (timeRef.current) {
+        timeRef.current.textContent = elapsedTime;
+      }
+    });
+
+    return () => {
+      unsubscribeEffect();
+    };
+  }, []);
+
   return (
     <div className="interface">
-      <div className="time">0.00</div>
-      <div className="restart">Restart</div>
+      <div className="time" ref={timeRef}>
+        0.00
+      </div>
+      {phase === "ended" ? (
+        <div onClick={restart} className="restart">
+          Restart
+        </div>
+      ) : null}
 
       {/* Controls */}
       <div className="controls">
