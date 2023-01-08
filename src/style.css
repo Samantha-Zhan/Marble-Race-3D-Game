@@ -1,0 +1,72 @@
+html,
+body,
+#root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: ivory;
+}
+
+/**
+Interface
+**/
+.interface {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  font-family: "Bebas Neue", cursive;
+  /**
+  * Controls
+  */
+}
+.interface .time,
+.interface .restart {
+  text-align: center;
+  position: absolute;
+  left: 0%;
+  width: 100%;
+  color: white;
+  background: rgba(0, 0, 0, 0.2);
+}
+.interface .time {
+  top: 15%;
+  font-size: 6vh;
+  padding-top: 5px;
+}
+.interface .restart {
+  pointer-events: auto;
+  display: flex;
+  justify-content: center;
+  top: 40%;
+  padding-top: 10px;
+  font-size: 80px;
+  cursor: pointer;
+}
+.interface .controls {
+  position: absolute;
+  bottom: 10%;
+  left: 0;
+  width: 100%;
+}
+.interface .controls .raw {
+  display: flex;
+  justify-content: center;
+}
+.interface .controls .key {
+  width: 40px;
+  height: 40px;
+  margin: 4px;
+  border: 2px solid #ffffff;
+  background: rgba(255, 255, 255, 0.2666666667);
+}
+.interface .controls .key.large {
+  width: 144px;
+}
+.interface .controls .key.active {
+  background: rgba(255, 255, 255, 0.6);
+}/*# sourceMappingURL=style.css.map */
